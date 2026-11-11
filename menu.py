@@ -78,8 +78,12 @@ def parse(pdf_path, today=None):
     with pdfplumber.open(pdf_path) as pdf:
         page = pdf.pages[0]
         headings = [x for x in page.extract_text().split("\n") if x.strip()]
-        rows = page.extract_table(
-            {"vertical_strategy": "lines", "horizontal_strategy": "lines"})
+        # 칸 배경색 사각형 가장자리도 선으로 잡히면 셀이 쪼개진다(11월 A코너 메인 유실).
+        # 실제로 그려진 테두리, 즉 얇은 사각형과 선만 격자로 쓴다.
+        borders = [o for o in page.rects if min(o["width"], o["height"]) <= 2] + page.lines
+        rows = page.extract_table({
+            "vertical_strategy": "explicit", "horizontal_strategy": "explicit",
+            "explicit_vertical_lines": borders, "explicit_horizontal_lines": borders})
     if not rows:
         sys.exit("표를 찾지 못했습니다.")
 
